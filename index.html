@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Altcoin Relative Performance</title>
+<style>
+:root{--bg0:#131316;--bg1:#1a1a1e;--bg2:#212125;--bg3:#28282e;--bdr:#2c2c32;--t1:#d8d8dc;--t2:#88889a;--t3:#55556a;--grn:#00d49a;--red:#ff4d6a;--acc:#5b8def;--ylw:#e8b830}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg0);color:var(--t1);font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;font-size:11px;line-height:1.2}
+.hdr{padding:8px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.hdr h1{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--t2)}
+.ctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ctl label{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:1px}
+select,input[type=text]{background:var(--bg2);border:1px solid var(--bdr);color:var(--t1);font-family:inherit;font-size:10px;padding:3px 6px;border-radius:2px;outline:none}
+select:focus,input:focus{border-color:var(--acc)}
+input[type=text]{width:220px}
+input::placeholder{color:var(--t3);font-size:9px}
+.btn{background:var(--bg2);border:1px solid var(--bdr);color:var(--t2);font-family:inherit;font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:2px;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.sbar{padding:3px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);background:var(--bg1);font-size:9px;color:var(--t3)}
+.sbar .sl{display:flex;align-items:center;gap:10px}
+.dot{width:5px;height:5px;border-radius:50%;display:inline-block}
+.dot.live{background:var(--grn);box-shadow:0 0 4px var(--grn)}
+.dot.loading{background:var(--ylw);animation:pulse .8s infinite}
+.dot.error{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.tc{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1060px}
+thead th{background:var(--bg1);position:sticky;top:0;z-index:10;padding:4px 4px;text-align:right;font-size:8px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--bdr);cursor:pointer;user-select:none;white-space:nowrap;transition:color .15s}
+thead th:hover{color:var(--t2)}
+thead th.sa,thead th.sd{color:var(--acc)}
+th .ar{margin-left:1px;font-size:7px;opacity:0;transition:opacity .15s}
+thead th:hover .ar{opacity:.4}
+thead th.sa .ar,thead th.sd .ar{opacity:1}
+th.cs{width:72px;text-align:left}
+th.cr{width:22px;text-align:center}
+th.cf{width:52px}
+th.ci{width:30px}
+th.cp{width:62px}
+th.ct{width:56px}
+th.nosort{cursor:default}
+th.nosort:hover{color:var(--t3)}
+tbody tr{border-bottom:1px solid var(--bdr);transition:background .1s;cursor:pointer}
+tbody tr:hover{background:var(--bg3)}
+tbody tr.ur{border-left:2px solid var(--acc)}
+tbody tr.pinned{background:var(--bg2)}
+tbody tr.pinned td.cs{color:var(--ylw)}
+tbody tr.sep{height:4px;cursor:default;border-bottom:2px solid var(--bdr)}
+tbody tr.sep:hover{background:transparent}
+tbody tr.sep td{padding:0;border:none}
+td{padding:3px 4px;text-align:right;font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
+td.cr{text-align:center;color:var(--t3);font-size:9px}
+td.cs{text-align:left;font-weight:600;color:var(--t1);letter-spacing:.3px;font-size:10px}
+.sb{font-size:7px;padding:0px 2px;border-radius:1px;margin-left:2px;font-weight:500;vertical-align:middle}
+.sb.sp{background:rgba(0,212,154,.12);color:var(--grn)}
+.sb.pp{background:rgba(232,184,48,.12);color:var(--ylw)}
+td.pos{color:var(--grn)}
+td.neg{color:var(--red)}
+td.neu{color:var(--t3)}
+td.nd{color:var(--t3);font-size:8px}
+.lo{display:flex;align-items:center;justify-content:center;padding:50px 12px;color:var(--t3);font-size:11px}
+.lo .sp{width:12px;height:12px;border:2px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg1);border:1px solid var(--bdr);border-radius:6px;width:90%;max-width:720px;max-height:85vh;overflow:hidden}
+.modal-hdr{padding:10px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.modal-hdr h2{font-size:12px;font-weight:600;color:var(--t1);letter-spacing:.5px}
+.modal-hdr .close{background:none;border:none;color:var(--t3);font-size:16px;cursor:pointer;padding:0 4px;line-height:1}
+.modal-hdr .close:hover{color:var(--t1)}
+.modal-body{padding:14px;overflow-y:auto;max-height:calc(85vh - 44px)}
+.modal-body .chart-loading{color:var(--t3);font-size:11px;padding:40px;text-align:center}
+.chart-stats{display:flex;gap:16px;margin-bottom:10px;font-size:10px;color:var(--t2)}
+.chart-stats span{display:flex;align-items:center;gap:4px}
+.chart-stats .val{color:var(--t1);font-weight:600}
+canvas{width:100%!important;height:280px!important}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg0)}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>Alt Relative Perf</h1>
+  <div class="ctl">
+    <label>Base</label>
+    <select id="base">
+      <option value="USDT">USDT</option>
+      <option value="ETH" selected>ETH</option>
+      <option value="BTC">BTC</option>
+      <option value="SOL">SOL</option>
+      <option value="XRP">XRP</option>
+    </select>
+    <input type="text" id="addInput" placeholder="Add up to 5: DOGE, AAVE ...">
+    <button class="btn" onclick="addTokens()">Add</button>
+    <button class="btn" onclick="reload()">↻</button>
+  </div>
+</div>
+<div class="sbar"><div class="sl"><span class="dot" id="dot"></span>&nbsp;<span id="stxt">Init</span>&nbsp;&nbsp;<span id="cnt"></span></div><span id="ts"></span></div>
+<div class="tc" id="tc"><div class="lo"><div class="sp"></div>Loading...</div></div>
+
+<!-- Funding chart modal -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hdr">
+      <h2 id="modalTitle">Funding Rate History</h2>
+      <button class="close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="chart-stats" id="chartStats"></div>
+      <canvas id="fundChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const TS=[{l:'15m',i:'15m',n:1},{l:'1h',i:'1h',n:1},{l:'4h',i:'4h',n:1},{l:'8h',i:'4h',n:2},{l:'24h',i:'1d',n:1},{l:'3d',i:'1d',n:3},{l:'7d',i:'1d',n:7},{l:'14d',i:'1d',n:14},{l:'30d',i:'1d',n:30},{l:'60d',i:'1d',n:60}];
+const CUSTOM='APE APT BABY ERA ETHFI GRT HYPE ICP IP JTO JUP KAIA KMNO LQTY RAY PUMP PLUME PENDLE NEAR SYRUP WLD XLM WCT USELESS URANUS UNI SEI ZK DRIFT STRK'.split(' ');
+const PINNED=['ETH','BTC','SOL','XRP'];
+const STABLES=new Set('USDT USDC USDS USD1 DAI BUSD TUSD FDUSD USDD PYUSD USDP FRAX USDE USDJ GUSD SUSD EUSD LUSD CUSD ZUSD HUSD DOLA ALUSD CRVUSD MKUSD'.split(' '));
+let altData=[],pinnedData=[],sC=-1,sD=1,uT=[];
+let fundingMap={};
+let chartInstance=null;
+
+async function fj(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()}
+
+async function fetchFundingData(){
+  const map={};
+  try{const pi=await fj('https://fapi.binance.com/fapi/v1/premiumIndex');for(const p of pi)map[p.symbol]={rate:parseFloat(p.lastFundingRate)||0,nextTime:p.nextFundingTime,intervalHours:8}}catch(e){}
+  try{const fi=await fj('https://fapi.binance.com/fapi/v1/fundingInfo');for(const f of fi){if(map[f.symbol])map[f.symbol].intervalHours=f.fundingIntervalHours||8;else map[f.symbol]={rate:0,nextTime:0,intervalHours:f.fundingIntervalHours||8}}}catch(e){}
+  fundingMap=map;
+}
+
+async function getTop20(){
+  try{
+    const d=await fj('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false');
+    const skip=new Set([...PINNED,...STABLES,'WBTC','WETH','STETH','WEETH','LEO','WTRX','TON']);
+    const r=[];for(const c of d){const s=(c.symbol||'').toUpperCase();if(skip.has(s))continue;if(r.length>=20)break;r.push({symbol:s,pu:c.current_price})}return r;
+  }catch(e){return'DOGE ADA AVAX LINK TRX SUI DOT SHIB HBAR LTC UNI AAVE ARB OP FIL MKR RENDER INJ FET PEPE'.split(' ').map(s=>({symbol:s,pu:0}))}
+}
+
+async function chk(s){
+  const sym=s+'USDT';
+  try{const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbol='+sym);if(r.ok){const d=await r.json();return{t:'spot',bs:sym,price:+d.price}}}catch(e){}
+  try{const r=await fetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol='+sym);if(r.ok){const d=await r.json();return{t:'perp',bs:sym,price:+d.price}}}catch(e){}
+  return null;
+}
+
+async function kl(sym,intv,lim,typ){
+  const u=(typ==='perp'?'https://fapi.binance.com/fapi/v1/klines':'https://api.binance.com/api/v3/klines')+'?symbol='+sym+'&interval='+intv+'&limit='+(lim+1);
+  try{return await fj(u)}catch(e){return null}
+}
+
+function attachFunding(v){
+  const fd=fundingMap[v.bs];
+  if(fd){const perYear=(365*24)/fd.intervalHours;v.fundRate=fd.rate;v.fundAnn=fd.rate*perYear*100;v.fundInt=fd.intervalHours}
+  else{v.fundRate=null;v.fundAnn=null;v.fundInt=null}
+}
+
+async function fetchTokenPerf(tk,base,iM){
+  const tkl={},bkl={};
+  for(const[intv,mx]of Object.entries(iM)){
+    tkl[intv]=await kl(tk.bs,intv,mx,tk.t);
+    if(base!=='USDT'){const bs2=base+'USDT';bkl[intv]=await kl(bs2,intv,mx,'spot');if(!bkl[intv])bkl[intv]=await kl(bs2,intv,mx,'perp')}
+  }
+  const perf={};
+  for(const t of TS){
+    const tK=tkl[t.i];
+    if(base==='USDT'){if(tK&&tK.length>t.n){const now=+tK[tK.length-1][4],then=+tK[tK.length-1-t.n][1];perf[t.l]=then>0?(now/then-1)*100:null}else perf[t.l]=null}
+    else{const bK=bkl[t.i];if(tK&&bK&&tK.length>t.n&&bK.length>t.n){const tN=+tK[tK.length-1][4],tT=+tK[tK.length-1-t.n][1],bN=+bK[bK.length-1][4],bT=+bK[bK.length-1-t.n][1];perf[t.l]=tT>0&&bT>0?((tN/tT)/(bN/bT)-1)*100:null}else perf[t.l]=null}
+  }
+  return{...tk,perf};
+}
+
+async function go(){
+  const base=document.getElementById('base').value;
+  ss('loading','Fetching funding data...');
+  await fetchFundingData();
+
+  ss('loading','Fetching top 20...');
+  const top20=await getTop20();
+
+  // Build alt symbols
+  const altSet=new Set(),meta={};
+  for(const t of top20){if(!PINNED.includes(t.symbol)&&t.symbol!==base&&!STABLES.has(t.symbol)){altSet.add(t.symbol);meta[t.symbol]={pu:t.pu,src:'top20'}}}
+  for(const s of CUSTOM){if(!PINNED.includes(s)&&s!==base&&!STABLES.has(s)){altSet.add(s);if(!meta[s])meta[s]={pu:0,src:'custom'}}}
+  for(const s of uT){if(!PINNED.includes(s)&&s!==base&&!STABLES.has(s)){altSet.add(s);if(!meta[s])meta[s]={pu:0,src:'user'}}}
+
+  // All symbols: pinned + alts
+  const pinnedSyms=PINNED.filter(s=>s!==base);
+  const altSyms=[...altSet];
+  const allSyms=[...pinnedSyms,...altSyms];
+
+  ss('loading',`Checking ${allSyms.length} pairs...`);
+  const validMap={};
+  for(let i=0;i<allSyms.length;i+=10){
+    const b=allSyms.slice(i,i+10),res=await Promise.all(b.map(chk));
+    for(let j=0;j<b.length;j++){
+      if(res[j]){
+        const isPinned=pinnedSyms.includes(b[j]);
+        const m=meta[b[j]]||{pu:0,src:isPinned?'pinned':'custom'};
+        const tok={symbol:b[j],...res[j],...m,src:isPinned?'pinned':m.src};
+        attachFunding(tok);
+        validMap[b[j]]=tok;
+      }
+    }
+    ss('loading',`${Math.min(i+10,allSyms.length)}/${allSyms.length}`);
+  }
+
+  const iM={};for(const t of TS){if(!iM[t.i])iM[t.i]=0;iM[t.i]=Math.max(iM[t.i],t.n)}
+  const allValid=Object.values(validMap);
+  ss('loading',`Klines 0/${allValid.length}`);
+
+  const results=[];
+  for(let i=0;i<allValid.length;i+=3){
+    const batch=allValid.slice(i,i+3);
+    const br=await Promise.all(batch.map(tk=>fetchTokenPerf(tk,base,iM)));
+    results.push(...br);
+    ss('loading',`Klines ${Math.min(i+3,allValid.length)}/${allValid.length}`);
+    if(i+3<allValid.length)await new Promise(r=>setTimeout(r,200));
+  }
+
+  // Split into pinned vs alts
+  pinnedData=[];altData=[];
+  for(const r of results){
+    if(pinnedSyms.includes(r.symbol))pinnedData.push(r);
+    else altData.push(r);
+  }
+  // Sort pinned in PINNED order
+  pinnedData.sort((a,b)=>pinnedSyms.indexOf(a.symbol)-pinnedSyms.indexOf(b.symbol));
+
+  document.getElementById('cnt').textContent=results.length+' pairs';
+  render();ss('live','Ready');document.getElementById('ts').textContent=new Date().toLocaleTimeString();
+}
+
+function render(){
+  const base=document.getElementById('base').value;
+  let alts=[...altData];
+  if(sC>=0){const l=TS[sC]?.l;if(l)alts.sort((a,b)=>{const av=a.perf[l],bv=b.perf[l];if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return-1;return(av-bv)*sD})}
+  else if(sC===-2)alts.sort((a,b)=>a.symbol.localeCompare(b.symbol)*sD);
+  else if(sC===-4)alts.sort((a,b)=>((a.price||0)-(b.price||0))*sD);
+  else if(sC===-5)alts.sort((a,b)=>{const av=a.fundAnn,bv=b.fundAnn;if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return-1;return(av-bv)*sD});
+  else if(sC===-6)alts.sort((a,b)=>{const av=a.fundInt,bv=b.fundInt;if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return-1;return(av-bv)*sD});
+
+  const colCount=4+TS.length; // rank,sym,fund,int,price + TS
+  let h='<table><thead><tr>';
+  h+=`<th class="cr nosort">#</th>`;
+  h+=mkth('cs',-2,'Sym');
+  h+=mkth('cf',-5,'Fund Ann');
+  h+=mkth('ci',-6,'Int');
+  h+=mkth('cp',-4,'Price');
+  for(let i=0;i<TS.length;i++)h+=mkth('ct',i,TS[i].l);
+  h+='</tr></thead><tbody>';
+
+  // Pinned rows
+  pinnedData.forEach(t=>{h+=renderRow(t,'—',true)});
+  // Separator
+  h+=`<tr class="sep"><td colspan="${colCount+1}"></td></tr>`;
+  // Alt rows
+  alts.forEach((t,i)=>{h+=renderRow(t,i+1,false)});
+
+  h+='</tbody></table>';document.getElementById('tc').innerHTML=h;
+}
+
+function renderRow(t,rank,pinned){
+  let h=`<tr class="${pinned?'pinned':''} ${t.src==='user'?'ur':''}" onclick="openFundingChart('${t.symbol}','${t.bs}',${t.fundInt||8})">`;
+  h+=`<td class="cr">${rank}</td>`;
+  h+=`<td class="cs">${t.symbol}<span class="sb ${t.t==='spot'?'sp':'pp'}">${t.t==='spot'?'S':'P'}</span></td>`;
+  if(t.fundAnn!=null){const c=t.fundAnn>0.5?'pos':t.fundAnn<-0.5?'neg':'neu';h+=`<td class="${c}">${t.fundAnn>0?'+':''}${t.fundAnn.toFixed(1)}%</td>`}
+  else h+='<td class="nd">—</td>';
+  if(t.fundInt!=null)h+=`<td style="color:var(--t2)">${t.fundInt}h</td>`;
+  else h+='<td class="nd">—</td>';
+  h+=`<td style="color:var(--t2)">$${fp(t.price)}</td>`;
+  for(const ts of TS){const v=t.perf[ts.l];if(v==null)h+='<td class="nd">—</td>';else{const c=v>0.005?'pos':v<-0.005?'neg':'neu';h+=`<td class="${c}">${v>0?'+':''}${v.toFixed(2)}</td>`}}
+  h+='</tr>';
+  return h;
+}
+
+function mkth(cls,idx,label){const s=sC===idx;const d=s?(sD===1?'sa':'sd'):'';return`<th class="${cls} ${d}" onclick="sb(${idx})">${label}<span class="ar">${s?(sD===1?'▲':'▼'):'▲'}</span></th>`}
+function fp(p){if(!p)return'—';if(p>=1e3)return p.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');if(p>=1)return p.toFixed(2);if(p>=.01)return p.toFixed(4);if(p>=1e-4)return p.toFixed(6);return p.toExponential(2)}
+function sb(c){if(sC===c)sD*=-1;else{sC=c;sD=c===-2?1:-1}render()}
+
+// ── Funding chart modal ──
+
+async function openFundingChart(symbol,binanceSym,intHours){
+  const modal=document.getElementById('modal');
+  modal.classList.add('open');
+  document.getElementById('modalTitle').textContent=symbol+' — Funding Rate History';
+  document.getElementById('chartStats').innerHTML='';
+  const canvas=document.getElementById('fundChart');
+  const ctx=canvas.getContext('2d');
+  if(chartInstance){chartInstance.destroy();chartInstance=null}
+
+  // Show loading
+  document.getElementById('chartStats').innerHTML='<span style="color:var(--t3)">Loading funding history...</span>';
+
+  try{
+    // Fetch max 1000 records (no startTime/endTime = most recent)
+    const url=`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${binanceSym}&limit=1000`;
+    const data=await fj(url);
+    if(!data||data.length===0){
+      document.getElementById('chartStats').innerHTML='<span style="color:var(--red)">No funding data available for this symbol</span>';
+      return;
+    }
+
+    const labels=data.map(d=>{const dt=new Date(d.fundingTime);return dt.toLocaleDateString('en',{month:'short',day:'numeric'})});
+    const rates=data.map(d=>parseFloat(d.fundingRate)*100); // to %
+    const annRates=data.map(d=>parseFloat(d.fundingRate)*((365*24)/intHours)*100);
+
+    // Stats
+    const avg=annRates.reduce((a,b)=>a+b,0)/annRates.length;
+    const max=Math.max(...annRates);
+    const min=Math.min(...annRates);
+    const current=annRates[annRates.length-1];
+    const days=Math.round(data.length*intHours/24);
+
+    document.getElementById('chartStats').innerHTML=`
+      <span>Period: <span class="val">${days}d (${data.length} obs)</span></span>
+      <span>Current: <span class="val" style="color:${current>=0?'var(--grn)':'var(--red)'}">${current>=0?'+':''}${current.toFixed(1)}%</span></span>
+      <span>Avg: <span class="val" style="color:${avg>=0?'var(--grn)':'var(--red)'}">${avg>=0?'+':''}${avg.toFixed(1)}%</span></span>
+      <span>Max: <span class="val" style="color:var(--grn)">${max>=0?'+':''}${max.toFixed(1)}%</span></span>
+      <span>Min: <span class="val" style="color:var(--red)">${min>=0?'+':''}${min.toFixed(1)}%</span></span>
+    `;
+
+    // Thin out labels for readability
+    const step=Math.max(1,Math.floor(data.length/20));
+    const sparseLabels=labels.map((l,i)=>i%step===0?l:'');
+
+    chartInstance=new Chart(ctx,{
+      type:'bar',
+      data:{
+        labels:sparseLabels,
+        datasets:[{
+          label:'Annualized Funding %',
+          data:annRates,
+          backgroundColor:annRates.map(v=>v>=0?'rgba(0,212,154,0.5)':'rgba(255,77,106,0.5)'),
+          borderColor:annRates.map(v=>v>=0?'rgba(0,212,154,0.8)':'rgba(255,77,106,0.8)'),
+          borderWidth:1,
+          borderRadius:1,
+          barPercentage:1,
+          categoryPercentage:1,
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        animation:{duration:300},
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:'#1a1a1e',
+            borderColor:'#333',
+            borderWidth:1,
+            titleFont:{family:'monospace',size:10},
+            bodyFont:{family:'monospace',size:10},
+            callbacks:{
+              title:function(ctx){return labels[ctx[0].dataIndex]},
+              label:function(ctx){
+                const ann=annRates[ctx.dataIndex];
+                const per=rates[ctx.dataIndex];
+                return[`Per period: ${per>=0?'+':''}${per.toFixed(4)}%`,`Annualized: ${ann>=0?'+':''}${ann.toFixed(1)}%`];
+              }
+            }
+          }
+        },
+        scales:{
+          x:{
+            grid:{color:'rgba(50,50,60,0.3)',lineWidth:0.5},
+            ticks:{color:'#55556a',font:{family:'monospace',size:8},maxRotation:0}
+          },
+          y:{
+            grid:{color:'rgba(50,50,60,0.3)',lineWidth:0.5},
+            ticks:{
+              color:'#88889a',
+              font:{family:'monospace',size:9},
+              callback:v=>(v>=0?'+':'')+v.toFixed(0)+'%'
+            }
+          }
+        }
+      }
+    });
+  }catch(e){
+    document.getElementById('chartStats').innerHTML=`<span style="color:var(--red)">Error loading data: ${e.message}</span>`;
+  }
+}
+
+function closeModal(e){
+  if(e&&e.target!==document.getElementById('modal'))return;
+  document.getElementById('modal').classList.remove('open');
+  if(chartInstance){chartInstance.destroy();chartInstance=null}
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+
+// ── Controls ──
+
+function addTokens(){const inp=document.getElementById('addInput');const toks=inp.value.trim().toUpperCase().split(/[,\s]+/).filter(t=>t.length>0&&t.length<=10).slice(0,5);let a=false;for(const t of toks){if(!uT.includes(t)&&!PINNED.includes(t)&&!STABLES.has(t)){uT.push(t);a=true}}if(a){inp.value='';reload()}}
+function reload(){sC=-1;sD=1;document.getElementById('tc').innerHTML='<div class="lo"><div class="sp"></div>Loading...</div>';go()}
+function ss(s,t){document.getElementById('dot').className='dot '+s;document.getElementById('stxt').textContent=t}
+document.getElementById('base').addEventListener('change',reload);
+document.getElementById('addInput').addEventListener('keydown',e=>{if(e.key==='Enter')addTokens()});
+go();
+</script>
+</body>
+</html>
