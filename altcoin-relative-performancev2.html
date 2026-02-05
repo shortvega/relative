@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Altcoin Relative Performance</title>
+<style>
+:root{--bg0:#131316;--bg1:#1a1a1e;--bg2:#212125;--bg3:#28282e;--bdr:#2c2c32;--t1:#d8d8dc;--t2:#88889a;--t3:#55556a;--grn:#00d49a;--red:#ff4d6a;--acc:#5b8def;--ylw:#e8b830}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg0);color:var(--t1);font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,monospace;font-size:11px;line-height:1.2}
+.hdr{padding:8px 12px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.hdr h1{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--t2)}
+.ctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ctl label{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:1px}
+select,input[type=text]{background:var(--bg2);border:1px solid var(--bdr);color:var(--t1);font-family:inherit;font-size:10px;padding:3px 6px;border-radius:2px;outline:none}
+select:focus,input:focus{border-color:var(--acc)}
+input[type=text]{width:220px}
+input::placeholder{color:var(--t3);font-size:9px}
+.btn{background:var(--bg2);border:1px solid var(--bdr);color:var(--t2);font-family:inherit;font-size:9px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:2px;cursor:pointer;transition:all .15s}
+.btn:hover{border-color:var(--acc);color:var(--acc)}
+.sbar{padding:3px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bdr);background:var(--bg1);font-size:9px;color:var(--t3)}
+.sbar .sl{display:flex;align-items:center;gap:10px}
+.dot{width:5px;height:5px;border-radius:50%;display:inline-block}
+.dot.live{background:var(--grn);box-shadow:0 0 4px var(--grn)}
+.dot.loading{background:var(--ylw);animation:pulse .8s infinite}
+.dot.error{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+.tc{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1060px}
+thead th{background:var(--bg1);position:sticky;top:0;z-index:10;padding:4px 4px;text-align:right;font-size:8px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--bdr);cursor:pointer;user-select:none;white-space:nowrap;transition:color .15s}
+thead th:hover{color:var(--t2)}
+thead th.sa,thead th.sd{color:var(--acc)}
+th .ar{margin-left:1px;font-size:7px;opacity:0;transition:opacity .15s}
+thead th:hover .ar{opacity:.4}
+thead th.sa .ar,thead th.sd .ar{opacity:1}
+th.cs{width:72px;text-align:left}
+th.cr{width:22px;text-align:center}
+th.cf{width:52px}
+th.ci{width:30px}
+th.cp{width:62px}
+th.ct{width:56px}
+tbody tr{border-bottom:1px solid var(--bdr);transition:background .1s}
+tbody tr:hover{background:var(--bg3)}
+tbody tr.ur{border-left:2px solid var(--acc)}
+td{padding:3px 4px;text-align:right;font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}
+td.cr{text-align:center;color:var(--t3);font-size:9px}
+td.cs{text-align:left;font-weight:600;color:var(--t1);letter-spacing:.3px;font-size:10px}
+.sb{font-size:7px;padding:0px 2px;border-radius:1px;margin-left:2px;font-weight:500;vertical-align:middle}
+.sb.sp{background:rgba(0,212,154,.12);color:var(--grn)}
+.sb.pp{background:rgba(232,184,48,.12);color:var(--ylw)}
+td.pos{color:var(--grn)}
+td.neg{color:var(--red)}
+td.neu{color:var(--t3)}
+td.nd{color:var(--t3);font-size:8px}
+.lo{display:flex;align-items:center;justify-content:center;padding:50px 12px;color:var(--t3);font-size:11px}
+.lo .sp{width:12px;height:12px;border:2px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg0)}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>Alt Relative Perf</h1>
+  <div class="ctl">
+    <label>Base</label>
+    <select id="base">
+      <option value="USDT">USDT</option>
+      <option value="ETH" selected>ETH</option>
+      <option value="BTC">BTC</option>
+      <option value="SOL">SOL</option>
+      <option value="XRP">XRP</option>
+    </select>
+    <input type="text" id="addInput" placeholder="Add up to 5: DOGE, AAVE ...">
+    <button class="btn" onclick="addTokens()">Add</button>
+    <button class="btn" onclick="reload()">↻</button>
+  </div>
+</div>
+<div class="sbar"><div class="sl"><span class="dot" id="dot"></span>&nbsp;<span id="stxt">Init</span>&nbsp;&nbsp;<span id="cnt"></span></div><span id="ts"></span></div>
+<div class="tc" id="tc"><div class="lo"><div class="sp"></div>Loading...</div></div>
+<script>
+const TS=[{l:'15m',i:'15m',n:1},{l:'1h',i:'1h',n:1},{l:'4h',i:'4h',n:1},{l:'8h',i:'4h',n:2},{l:'24h',i:'1d',n:1},{l:'3d',i:'1d',n:3},{l:'7d',i:'1d',n:7},{l:'14d',i:'1d',n:14},{l:'30d',i:'1d',n:30},{l:'60d',i:'1d',n:60}];
+const CUSTOM='APE APT BABY ERA ETHFI GRT HYPE ICP IP JTO JUP KAIA KMNO LQTY RAY PUMP PLUME PENDLE NEAR SYRUP WLD XLM WCT USELESS URANUS UNI SEI ZK DRIFT STRK'.split(' ');
+const BASES=['ETH','BTC','SOL','XRP'];
+const STABLES=new Set('USDT USDC USDS USD1 DAI BUSD TUSD FDUSD USDD PYUSD USDP FRAX USDE USDJ GUSD SUSD EUSD LUSD CUSD ZUSD HUSD DOLA ALUSD CRVUSD MKUSD'.split(' '));
+let data=[],sC=-1,sD=1,uT=[];
+let fundingMap={};  // symbol -> {rate, intervalHours}
+
+async function fj(u){const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()}
+
+// Fetch all funding rates + intervals in bulk
+async function fetchFundingData(){
+  const map={};
+  try{
+    // premiumIndex gives lastFundingRate + nextFundingTime for all symbols
+    const pi=await fj('https://fapi.binance.com/fapi/v1/premiumIndex');
+    for(const p of pi){map[p.symbol]={rate:parseFloat(p.lastFundingRate)||0,nextTime:p.nextFundingTime,intervalHours:8}}
+  }catch(e){console.warn('premiumIndex failed',e)}
+  try{
+    // fundingInfo gives fundingIntervalHours for symbols with non-default intervals
+    const fi=await fj('https://fapi.binance.com/fapi/v1/fundingInfo');
+    for(const f of fi){if(map[f.symbol]){map[f.symbol].intervalHours=f.fundingIntervalHours||8}else{map[f.symbol]={rate:0,nextTime:0,intervalHours:f.fundingIntervalHours||8}}}
+  }catch(e){console.warn('fundingInfo failed',e)}
+  fundingMap=map;
+}
+
+async function getTop20(){
+  try{
+    const d=await fj('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false');
+    const skip=new Set([...BASES,...STABLES,'WBTC','WETH','STETH','WEETH','LEO','WTRX','TON']);
+    const r=[];for(const c of d){const s=(c.symbol||'').toUpperCase();if(skip.has(s))continue;if(r.length>=20)break;r.push({symbol:s,pu:c.current_price})}return r;
+  }catch(e){return'DOGE ADA AVAX LINK TRX SUI DOT SHIB HBAR LTC UNI AAVE ARB OP FIL MKR RENDER INJ FET PEPE'.split(' ').map(s=>({symbol:s,pu:0}))}
+}
+
+async function chk(s){
+  const sym=s+'USDT';
+  try{const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbol='+sym);if(r.ok){const d=await r.json();return{t:'spot',bs:sym,price:+d.price}}}catch(e){}
+  try{const r=await fetch('https://fapi.binance.com/fapi/v1/ticker/price?symbol='+sym);if(r.ok){const d=await r.json();return{t:'perp',bs:sym,price:+d.price}}}catch(e){}
+  return null;
+}
+
+async function kl(sym,intv,lim,typ){
+  const u=(typ==='perp'?'https://fapi.binance.com/fapi/v1/klines':'https://api.binance.com/api/v3/klines')+'?symbol='+sym+'&interval='+intv+'&limit='+(lim+1);
+  try{return await fj(u)}catch(e){return null}
+}
+
+async function go(){
+  const base=document.getElementById('base').value;
+  ss('loading','Fetching funding data...');
+  await fetchFundingData();
+
+  ss('loading','Fetching top 20...');
+  const top20=await getTop20();
+  const all=new Set(),meta={};
+  for(const t of top20){if(!BASES.includes(t.symbol)&&t.symbol!==base&&!STABLES.has(t.symbol)){all.add(t.symbol);meta[t.symbol]={pu:t.pu,src:'top20'}}}
+  for(const s of CUSTOM){if(!BASES.includes(s)&&s!==base&&!STABLES.has(s)){all.add(s);if(!meta[s])meta[s]={pu:0,src:'custom'}}}
+  for(const s of uT){if(!BASES.includes(s)&&s!==base&&!STABLES.has(s)){all.add(s);if(!meta[s])meta[s]={pu:0,src:'user'}}}
+  const syms=[...all];ss('loading',`Checking ${syms.length} pairs...`);
+  const valid=[];
+  for(let i=0;i<syms.length;i+=10){
+    const b=syms.slice(i,i+10),res=await Promise.all(b.map(chk));
+    for(let j=0;j<b.length;j++)if(res[j])valid.push({symbol:b[j],...res[j],...meta[b[j]]});
+    ss('loading',`${Math.min(i+10,syms.length)}/${syms.length}`);
+  }
+
+  // Attach funding data
+  for(const v of valid){
+    const fd=fundingMap[v.bs];
+    if(fd){
+      const perYear=(365*24)/fd.intervalHours;
+      v.fundRate=fd.rate;
+      v.fundAnn=fd.rate*perYear*100; // annualized %
+      v.fundInt=fd.intervalHours;
+    }else{
+      v.fundRate=null;v.fundAnn=null;v.fundInt=null;
+    }
+  }
+
+  const iM={};for(const t of TS){if(!iM[t.i])iM[t.i]=0;iM[t.i]=Math.max(iM[t.i],t.n)}
+  ss('loading',`Klines 0/${valid.length}`);
+  const results=[];
+  for(let i=0;i<valid.length;i+=3){
+    const batch=valid.slice(i,i+3);
+    const br=await Promise.all(batch.map(async tk=>{
+      const tkl={},bkl={};
+      for(const[intv,mx]of Object.entries(iM)){tkl[intv]=await kl(tk.bs,intv,mx,tk.t);if(base!=='USDT'){const bs2=base+'USDT';bkl[intv]=await kl(bs2,intv,mx,'spot');if(!bkl[intv])bkl[intv]=await kl(bs2,intv,mx,'perp')}}
+      const perf={};
+      for(const t of TS){
+        const tK=tkl[t.i];
+        if(base==='USDT'){if(tK&&tK.length>t.n){const now=+tK[tK.length-1][4],then=+tK[tK.length-1-t.n][1];perf[t.l]=then>0?(now/then-1)*100:null}else perf[t.l]=null}
+        else{const bK=bkl[t.i];if(tK&&bK&&tK.length>t.n&&bK.length>t.n){const tN=+tK[tK.length-1][4],tT=+tK[tK.length-1-t.n][1],bN=+bK[bK.length-1][4],bT=+bK[bK.length-1-t.n][1];perf[t.l]=tT>0&&bT>0?((tN/tT)/(bN/bT)-1)*100:null}else perf[t.l]=null}
+      }
+      return{...tk,perf};
+    }));
+    results.push(...br);ss('loading',`Klines ${Math.min(i+3,valid.length)}/${valid.length}`);
+    if(i+3<valid.length)await new Promise(r=>setTimeout(r,200));
+  }
+  data=results;document.getElementById('cnt').textContent=results.length+' pairs';
+  render();ss('live','Ready');document.getElementById('ts').textContent=new Date().toLocaleTimeString();
+}
+
+function render(){
+  const base=document.getElementById('base').value;let d=[...data];
+  if(sC>=0){const l=TS[sC]?.l;if(l)d.sort((a,b)=>{const av=a.perf[l],bv=b.perf[l];if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return-1;return(av-bv)*sD})}
+  else if(sC===-2)d.sort((a,b)=>a.symbol.localeCompare(b.symbol)*sD);
+  else if(sC===-4)d.sort((a,b)=>((a.price||0)-(b.price||0))*sD);
+  else if(sC===-5)d.sort((a,b)=>{const av=a.fundAnn,bv=b.fundAnn;if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return-1;return(av-bv)*sD});
+  else if(sC===-6)d.sort((a,b)=>{const av=a.fundInt,bv=b.fundInt;if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return-1;return(av-bv)*sD});
+
+  let h='<table><thead><tr>';
+  h+=`<th class="cr" onclick="sb(-1)">#</th>`;
+  h+=mkth('cs',-2,'Sym');
+  h+=mkth('cf',-5,'Fund Ann');
+  h+=mkth('ci',-6,'Int');
+  h+=mkth('cp',-4,'Price');
+  for(let i=0;i<TS.length;i++)h+=mkth('ct',i,TS[i].l);
+  h+='</tr></thead><tbody>';
+  d.forEach((t,i)=>{
+    h+=`<tr class="${t.src==='user'?'ur':''}">`;
+    h+=`<td class="cr">${i+1}</td>`;
+    h+=`<td class="cs">${t.symbol}<span class="sb ${t.t==='spot'?'sp':'pp'}">${t.t==='spot'?'S':'P'}</span></td>`;
+    // Funding annualized
+    if(t.fundAnn!=null){const c=t.fundAnn>0.5?'pos':t.fundAnn<-0.5?'neg':'neu';h+=`<td class="${c}">${t.fundAnn>0?'+':''}${t.fundAnn.toFixed(1)}%</td>`}
+    else h+='<td class="nd">—</td>';
+    // Funding interval
+    if(t.fundInt!=null)h+=`<td style="color:var(--t2)">${t.fundInt}h</td>`;
+    else h+='<td class="nd">—</td>';
+    // Price
+    h+=`<td style="color:var(--t2)">$${fp(t.price)}</td>`;
+    // Perf columns
+    for(const ts of TS){const v=t.perf[ts.l];if(v==null)h+='<td class="nd">—</td>';else{const c=v>0.005?'pos':v<-0.005?'neg':'neu';h+=`<td class="${c}">${v>0?'+':''}${v.toFixed(2)}</td>`}}
+    h+='</tr>';
+  });
+  h+='</tbody></table>';document.getElementById('tc').innerHTML=h;
+}
+
+function mkth(cls,idx,label){const s=sC===idx;const d=s?(sD===1?'sa':'sd'):'';return`<th class="${cls} ${d}" onclick="sb(${idx})">${label}<span class="ar">${s?(sD===1?'▲':'▼'):'▲'}</span></th>`}
+function fp(p){if(!p)return'—';if(p>=1e3)return p.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',');if(p>=1)return p.toFixed(2);if(p>=.01)return p.toFixed(4);if(p>=1e-4)return p.toFixed(6);return p.toExponential(2)}
+function sb(c){if(sC===c)sD*=-1;else{sC=c;sD=c===-2?1:-1}render()}
+function addTokens(){const inp=document.getElementById('addInput');const toks=inp.value.trim().toUpperCase().split(/[,\s]+/).filter(t=>t.length>0&&t.length<=10).slice(0,5);let a=false;for(const t of toks){if(!uT.includes(t)&&!BASES.includes(t)&&!STABLES.has(t)){uT.push(t);a=true}}if(a){inp.value='';reload()}}
+function reload(){sC=-1;sD=1;document.getElementById('tc').innerHTML='<div class="lo"><div class="sp"></div>Loading...</div>';go()}
+function ss(s,t){document.getElementById('dot').className='dot '+s;document.getElementById('stxt').textContent=t}
+document.getElementById('base').addEventListener('change',reload);
+document.getElementById('addInput').addEventListener('keydown',e=>{if(e.key==='Enter')addTokens()});
+go();
+</script>
+</body>
+</html>
