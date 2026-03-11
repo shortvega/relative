@@ -81,6 +81,13 @@ canvas{width:100%!important;height:280px!important}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:var(--bg0)}
 ::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
+
+/* Column highlight */
+col.hl-col{background:rgba(91,141,239,0.08)}
+td.col-hl{background:rgba(91,141,239,0.10)!important;outline:none}
+th.col-hl-hdr{color:var(--acc)!important;background:rgba(91,141,239,0.06)!important}
+.copy-hint{position:fixed;bottom:12px;right:12px;background:var(--bg2);border:1px solid var(--acc);color:var(--acc);font-size:9px;letter-spacing:.5px;padding:4px 10px;border-radius:3px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:200}
+.copy-hint.show{opacity:1}
 </style>
 </head>
 <body>
@@ -89,8 +96,8 @@ canvas{width:100%!important;height:280px!important}
   <div class="ctl">
     <label>Base</label>
     <select id="base">
-      <option value="USDT">USDT</option>
-      <option value="ETH" selected>ETH</option>
+      <option value="USDT" selected>USDT</option>
+      <option value="ETH">ETH</option>
       <option value="BTC">BTC</option>
       <option value="SOL">SOL</option>
       <option value="XRP">XRP</option>
@@ -117,10 +124,58 @@ canvas{width:100%!important;height:280px!important}
   </div>
 </div>
 
+<div class="copy-hint" id="copyHint">Column copied ✓</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-const TS=[{l:'15m',i:'15m',n:1},{l:'1h',i:'1h',n:1},{l:'4h',i:'4h',n:1},{l:'8h',i:'4h',n:2},{l:'24h',i:'1d',n:1},{l:'3d',i:'1d',n:3},{l:'7d',i:'1d',n:7},{l:'14d',i:'1d',n:14},{l:'30d',i:'1d',n:30},{l:'60d',i:'1d',n:60}];
-const CUSTOM='APE APT BABY ERA ETHFI GRT HYPE ICP IP JTO JUP KAIA KMNO LQTY RAY PUMP PLUME PENDLE NEAR SYRUP WLD XLM WCT USELESS URANUS UNI SEI ZK DRIFT SOPH STRK'.split(' ');
+// ── Column highlight & copy ──
+let activeColIdx=null;
+let hintTimer=null;
+
+function clearColHighlight(){
+  document.querySelectorAll('td.col-hl,th.col-hl-hdr').forEach(el=>{el.classList.remove('col-hl','col-hl-hdr')});
+  activeColIdx=null;
+}
+
+function highlightCol(thEl){
+  clearColHighlight();
+  const ths=Array.from(document.querySelectorAll('thead th'));
+  const colIdx=ths.indexOf(thEl);
+  if(colIdx<0)return;
+  thEl.classList.add('col-hl-hdr');
+  activeColIdx=colIdx;
+  // Collect values for copy
+  const vals=[];
+  document.querySelectorAll('tbody tr:not(.sep)').forEach(tr=>{
+    const tds=tr.querySelectorAll('td');
+    if(tds[colIdx]){tds[colIdx].classList.add('col-hl');const t=tds[colIdx].textContent.trim();if(t&&t!=='—')vals.push(t)}
+  });
+  // Copy to clipboard
+  if(vals.length>0){
+    navigator.clipboard.writeText(vals.join('\n')).then(()=>{
+      const hint=document.getElementById('copyHint');
+      hint.classList.add('show');
+      clearTimeout(hintTimer);
+      hintTimer=setTimeout(()=>hint.classList.remove('show'),1800);
+    }).catch(()=>{});
+  }
+}
+
+document.addEventListener('click',e=>{
+  const th=e.target.closest('thead th');
+  if(th){
+    // Let sort run first, then re-apply highlight on next frame
+    setTimeout(()=>{
+      const ths=Array.from(document.querySelectorAll('thead th'));
+      const idx=ths.findIndex(t=>t.textContent.replace(/[▲▼]/g,'').trim()===th.textContent.replace(/[▲▼]/g,'').trim());
+      if(idx>=0)highlightCol(ths[idx]);
+    },50);
+    return;
+  }
+  if(!e.target.closest('table'))clearColHighlight();
+},true);
+const TS=[{l:'15m',i:'15m',n:1},{l:'1h',i:'1h',n:1},{l:'8h',i:'4h',n:2},{l:'24h',i:'1d',n:1},{l:'3d',i:'1d',n:3},{l:'7d',i:'1d',n:7},{l:'30d',i:'1d',n:30},{l:'60d',i:'1d',n:60}];
+const CUSTOM='APE APT BABY ETHFI HYPE ICP IP JTO JUP KAIA KMNO LQTY PUMP PLUME PENDLE NEAR SYRUP USELESS URANUS UNI SEI ZK DRIFT SOPH STRK'.split(' ');
 const PINNED=['ETH','BTC','SOL','XRP'];
 const STABLES=new Set('USDT USDC USDS USD1 DAI BUSD TUSD FDUSD USDD PYUSD USDP FRAX USDE USDJ GUSD SUSD EUSD LUSD CUSD ZUSD HUSD DOLA ALUSD CRVUSD MKUSD'.split(' '));
 let altData=[],pinnedData=[],sC=-1,sD=1,uT=[];
@@ -139,9 +194,9 @@ async function fetchFundingData(){
 async function getTop20(){
   try{
     const d=await fj('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false');
-    const skip=new Set([...PINNED,...STABLES,'WBTC','WETH','STETH','WEETH','LEO','WTRX','TON']);
+    const skip=new Set([...PINNED,...STABLES,'WBTC','WETH','STETH','WEETH','LEO','WTRX','TON','SHIB','WCT','XLM','TRX','BCH','ZEC','GRT','LTC','WLD','LINK','RAY','ERA','XMR']);
     const r=[];for(const c of d){const s=(c.symbol||'').toUpperCase();if(skip.has(s))continue;if(r.length>=20)break;r.push({symbol:s,pu:c.current_price})}return r;
-  }catch(e){return'DOGE ADA AVAX LINK TRX SUI DOT SHIB HBAR LTC UNI AAVE ARB OP FIL MKR RENDER INJ FET PEPE'.split(' ').map(s=>({symbol:s,pu:0}))}
+  }catch(e){return'DOGE ADA AVAX SUI DOT HBAR UNI AAVE ARB OP FIL MKR RENDER INJ FET PEPE'.split(' ').map(s=>({symbol:s,pu:0}))}
 }
 
 async function chk(s){
@@ -160,6 +215,18 @@ function attachFunding(v){
   const fd=fundingMap[v.bs];
   if(fd){const perYear=(365*24)/fd.intervalHours;v.fundRate=fd.rate;v.fundAnn=fd.rate*perYear*100;v.fundInt=fd.intervalHours}
   else{v.fundRate=null;v.fundAnn=null;v.fundInt=null}
+}
+
+async function fetchFund30dAvg(sym,intHours){
+  try{
+    const limit=Math.ceil(30*24/intHours);
+    const url=`https://fapi.binance.com/fapi/v1/fundingRate?symbol=${sym}&limit=${Math.min(limit,1000)}`;
+    const data=await fj(url);
+    if(!data||data.length===0)return null;
+    const perYear=(365*24)/intHours;
+    const annRates=data.map(d=>parseFloat(d.fundingRate)*perYear*100);
+    return annRates.reduce((a,b)=>a+b,0)/annRates.length;
+  }catch(e){return null}
 }
 
 async function fetchTokenPerf(tk,base,iM){
@@ -225,6 +292,18 @@ async function go(){
     if(i+3<allValid.length)await new Promise(r=>setTimeout(r,200));
   }
 
+  // Fetch 30d avg funding for all tokens (spot tokens may still have perp funding data)
+  ss('loading','Fetching 30d avg funding...');
+  for(let i=0;i<results.length;i+=3){
+    const batch=results.slice(i,i+3);
+    const avgs=await Promise.all(batch.map(r=>{
+      const intH=r.fundInt||(fundingMap[r.bs]?.intervalHours)||8;
+      return fetchFund30dAvg(r.bs,intH);
+    }));
+    batch.forEach((r,j)=>r.fundAnn30d=avgs[j]);
+    if(i+3<results.length)await new Promise(r=>setTimeout(r,300));
+  }
+
   // Split into pinned vs alts
   pinnedData=[];altData=[];
   for(const r of results){
@@ -245,13 +324,15 @@ function render(){
   else if(sC===-2)alts.sort((a,b)=>a.symbol.localeCompare(b.symbol)*sD);
   else if(sC===-4)alts.sort((a,b)=>((a.price||0)-(b.price||0))*sD);
   else if(sC===-5)alts.sort((a,b)=>{const av=a.fundAnn,bv=b.fundAnn;if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return-1;return(av-bv)*sD});
+  else if(sC===-7)alts.sort((a,b)=>{const av=a.fundAnn30d,bv=b.fundAnn30d;if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return-1;return(av-bv)*sD});
   else if(sC===-6)alts.sort((a,b)=>{const av=a.fundInt,bv=b.fundInt;if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return-1;return(av-bv)*sD});
 
-  const colCount=4+TS.length; // rank,sym,fund,int,price + TS
+  const colCount=5+TS.length; // rank,sym,fund,fund30d,int,price + TS
   let h='<table><thead><tr>';
   h+=`<th class="cr nosort">#</th>`;
   h+=mkth('cs',-2,'Sym');
   h+=mkth('cf',-5,'Fund Ann');
+  h+=mkth('cf',-7,'30d Avg Fund');
   h+=mkth('ci',-6,'Int');
   h+=mkth('cp',-4,'Price');
   for(let i=0;i<TS.length;i++)h+=mkth('ct',i,TS[i].l);
@@ -272,6 +353,8 @@ function renderRow(t,rank,pinned){
   h+=`<td class="cr">${rank}</td>`;
   h+=`<td class="cs">${t.symbol}<span class="sb ${t.t==='spot'?'sp':'pp'}">${t.t==='spot'?'S':'P'}</span></td>`;
   if(t.fundAnn!=null){const c=t.fundAnn>0.5?'pos':t.fundAnn<-0.5?'neg':'neu';h+=`<td class="${c}">${t.fundAnn>0?'+':''}${t.fundAnn.toFixed(1)}%</td>`}
+  else h+='<td class="nd">—</td>';
+  if(t.fundAnn30d!=null){const c=t.fundAnn30d>0.5?'pos':t.fundAnn30d<-0.5?'neg':'neu';h+=`<td class="${c}">${t.fundAnn30d>0?'+':''}${t.fundAnn30d.toFixed(1)}%</td>`}
   else h+='<td class="nd">—</td>';
   if(t.fundInt!=null)h+=`<td style="color:var(--t2)">${t.fundInt}h</td>`;
   else h+='<td class="nd">—</td>';
